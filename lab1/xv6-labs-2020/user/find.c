@@ -15,11 +15,7 @@ fmtname(char *path)
     ;
   p++;
 
-  // Return blank-padded name.
-//   if(strlen(p) >= DIRSIZ)
-//     return p;
   memmove(buf, p, strlen(p));
-  
   memset(buf+strlen(p), 0, DIRSIZ-strlen(p));
   return buf;
 }
@@ -45,9 +41,6 @@ find(char *path, char* filename)
 
   switch(st.type){
   case T_FILE:
-    // printf("pathname: %s\t", path);
-    // printf("fmtname: %s  strlen: %d  filename: %s res: %d\n", fmtname(path), strlen(fmtname(path)),filename, strcmp(fmtname(path), filename));
-
     if(strcmp(fmtname(path), filename) == 0)
         printf("%s\n", path);
     break;
