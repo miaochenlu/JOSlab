@@ -274,6 +274,7 @@ fork(void)
     return -1;
   }
   np->sz = p->sz;
+
   np->parent = p;
 
   // copy saved user registers.
@@ -293,7 +294,6 @@ fork(void)
   pid = np->pid;
 
   np->state = RUNNABLE;
-  np->mask = p->mask;
 
   release(&np->lock);
 
@@ -483,10 +483,14 @@ scheduler(void)
       }
       release(&p->lock);
     }
+#if !defined (LAB_FS)
     if(found == 0) {
       intr_on();
       asm volatile("wfi");
     }
+#else
+    ;
+#endif
   }
 }
 
@@ -692,16 +696,4 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
-}
-
-uint64
-nproc(void) {
-  int procCount = 0;
-  struct proc* p;
-  for(p = proc; p < &proc[NPROC]; p++) {
-    if(p->state != UNUSED) {
-      procCount++;
-    }
-  }
-  return procCount;
 }
