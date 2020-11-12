@@ -15,7 +15,7 @@ extern char end[]; // first address after kernel.
                    // defined by kernel.ld.
 
 struct run {
-  struct run *next;
+  struct run *next; //指向下一个空闲page的指针
 };
 
 struct {

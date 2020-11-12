@@ -5,7 +5,8 @@
 #include "riscv.h"
 #include "defs.h"
 #include "fs.h"
-
+#include "spinlock.h"
+#include "proc.h"
 /*
  * the kernel's page table.
  */
@@ -14,6 +15,7 @@ pagetable_t kernel_pagetable;
 extern char etext[];  // kernel.ld sets this to end of kernel code.
 
 extern char trampoline[]; // trampoline.S
+
 
 /*
  * create a direct-map page table for the kernel.
@@ -121,6 +123,17 @@ kvmmap(uint64 va, uint64 pa, uint64 sz, int perm)
     panic("kvmmap");
 }
 
+/**
+ * user's kernel page table
+ */ 
+void
+ukvmmap(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, int perm)
+{
+  if(mappages(pagetable, va, sz, pa, perm) != 0)
+    panic("ukvmmap");
+}
+
+
 // translate a kernel virtual address to
 // a physical address. only needed for
 // addresses on the stack.
@@ -132,7 +145,7 @@ kvmpa(uint64 va)
   pte_t *pte;
   uint64 pa;
   
-  pte = walk(kernel_pagetable, va, 0);
+  pte = walk(myproc()->kernel_pagetable, va, 0);
   if(pte == 0)
     panic("kvmpa");
   if((*pte & PTE_V) == 0)
@@ -153,7 +166,7 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 
   a = PGROUNDDOWN(va);
   last = PGROUNDDOWN(va + size - 1);
-  for(;;){
+  for(;;){ //for loop分配足够大小的物理内存
     if((pte = walk(pagetable, a, 1)) == 0)
       return -1;
     if(*pte & PTE_V)
@@ -191,6 +204,32 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
       kfree((void*)pa);
     }
     *pte = 0;
+  }
+}
+
+/**
+ * free user kernel page
+ */ 
+void
+ukvmunmap(pagetable_t pagetable, uint64 va, uint64 size)
+{
+  uint64 a, last;
+  pte_t *pte;
+
+  a = PGROUNDDOWN(va);
+  last = PGROUNDDOWN(va + size - 1);
+
+  for(;;){
+    if((pte = walk(pagetable, a, 0)) == 0)
+      panic("ukvmunmap: walk");
+    if((*pte & PTE_V) == 0)
+      panic("ukvmunmap: not mapped");
+    if(PTE_FLAGS(*pte) == PTE_V)
+      panic("ukvmunmap: not a leaf");
+    *pte = 0;
+    if (a == last)
+      break;
+    a += PGSIZE;
   }
 }
 
@@ -267,6 +306,32 @@ uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
   }
 
   return newsz;
+}
+
+
+// Add mappings for user addresses to process's kernel page table
+void
+u2kvmcopy(pagetable_t pagetable, pagetable_t kpagetable, uint64 oldsz, uint64 newsz)
+{
+  pte_t *pte_from, *pte_to;
+  uint64 a, pa;
+  uint flags;
+
+  if (newsz < oldsz)
+    return;
+  
+  oldsz = PGROUNDUP(oldsz);
+  for (a = oldsz; a < newsz; a += PGSIZE)
+  {
+    if ((pte_from = walk(pagetable, a, 0)) == 0)
+      panic("u2kvmcopy: pte should exist");
+    if ((pte_to = walk(kpagetable, a, 1)) == 0)
+      panic("u2kvmcopy: walk fails");
+    pa = PTE2PA(*pte_from);
+    // A page with PTE_U set cannot be accessed in kernel mode, so clear PTE_U
+    flags = (PTE_FLAGS(*pte_from) & (~PTE_U));
+    *pte_to = PA2PTE(pa) | flags;
+  }
 }
 
 // Recursively free page-table pages.
