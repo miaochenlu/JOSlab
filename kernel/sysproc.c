@@ -7,8 +7,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "sysinfo.h"
-extern uint64 nproc();
-extern uint64 nfree();
+
 uint64
 sys_exit(void)
 {
