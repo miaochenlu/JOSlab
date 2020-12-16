@@ -132,6 +132,7 @@ static uint64 (*syscalls[])(void) = {
 };
 
 char* syscallnames[] = {
+  "",
   "fork", "exit", "wait", "pipe",
   "read", "kill", "exec", "fstat",
   "chdir", "dup", "getpid", "sbrk",
