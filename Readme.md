@@ -7,3 +7,6 @@
 
 ## Lab2: system calls
 
+*  [code](https://github.com/miaochenlu/JOSlab/tree/syscall)  
+*  [report](https://miaochenlu.github.io/2020/12/16/xv6-lab2/)
+
