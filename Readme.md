@@ -10,3 +10,8 @@
 *  [code](https://github.com/miaochenlu/JOSlab/tree/syscall)  
 *  [report](https://miaochenlu.github.io/2020/12/16/xv6-lab2/)
 
+## Lab3: page tables
+
+*  [code](https://github.com/miaochenlu/xv6Labs/tree/pgtbl)
+*  [report](https://miaochenlu.github.io/2020/12/19/xv6-lab3/)
+
